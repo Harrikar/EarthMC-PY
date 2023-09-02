@@ -103,10 +103,10 @@ class GPS:
             return "south"
 
 class Tracker:
-    def __init__(self, x, z,map_name=str):
+    def __init__(self, x, z,map):
         self.x = x
         self.z = z
-        self.Map = Map(f'{map_name}')
+        self.Map = map
 
 
         self.current_players_aurora = {}
