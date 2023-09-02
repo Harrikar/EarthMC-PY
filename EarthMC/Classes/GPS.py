@@ -103,19 +103,20 @@ class GPS:
             return "south"
 
 class Tracker:
-    def __init__(self, x, z, aurora_map, nova_map):
+    def __init__(self, x, z,map):
         self.x = x
         self.z = z
-        self.aurora_map = aurora_map
-        self.nova_map = nova_map
+        self.Map = map
+
+
         self.current_players_aurora = {}
         self.current_players_nova = {}
         self.old_players_aurora = {}
         self.old_players_nova = {}
 
     def retrieve_and_update_players(self):
-        self.current_players_aurora = self.aurora_map.Players.get('all')
-        self.current_players_nova = self.nova_map.Players.get('all')
+        self.current_players_aurora = self.Map.Players.all
+        self.current_players_nova = self.Map.Players.all
         self.old_players_aurora = self.current_players_aurora.copy()
         self.old_players_nova = self.current_players_nova.copy()
 
