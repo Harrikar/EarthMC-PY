@@ -1,11 +1,10 @@
 from enum import Enum
 import time
-from EarthMC import Map
 import math
 from ..Utils import utils
 from typing import TypedDict
 
-LocationType = TypedDict('LocationType', { 'x': int, 'z': int })
+LocationType = TypedDict('LocationType', { 'x': float, 'z': float})
 class Location:
     def __init__(self, x, z):
         self.x = x
@@ -29,7 +28,7 @@ class Route(Enum):
 
 
 class GPS:
-    def __init__(self, map: Map):
+    def __init__(self,map ):
         self.map = map # The parent Map the GPS was set up on.
 
     def manhattan_distance(self,loc1, loc2):
