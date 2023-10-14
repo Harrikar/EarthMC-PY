@@ -60,10 +60,11 @@ class GPS:
     async def find_route(self,loc, options,map_name:str):
         if not loc['x']:
             x = loc['x']
-            raise f'Invalid {x}'
+            print( f'Invalid {x}')
+
         elif not loc['z']:
             z = loc['z']
-            raise f'Invalid {z}'
+            print(f'Invalid {z}')
 
         towns = self.map.Towns.all()
         nations = self.map.Nations.all()
