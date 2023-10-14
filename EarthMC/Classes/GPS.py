@@ -65,8 +65,8 @@ class GPS:
             z = loc['z']
             raise f'Invalid {z}'
 
-        towns = DataHandler.Endpoint.fetch(type='towns',mapName=map_name)
-        nations = DataHandler.Endpoint.fetch(type='nations',mapName=map_name)
+        towns = self.map.Towns.all()
+        nations = self.map.Nations.all()
         filtered = []
 
         for nation in nations:
