@@ -8,7 +8,7 @@ class Endpoint:
         endpoints = "https://raw.githubusercontent.com/EarthMC-Toolkit/Toolkit-Website/main/endpoints.json"
         self.urls = self.reqJSON(endpoints)
 
-    @ttl_cache(2, 300)
+    @ttl_cache(10, 200)
     def fetch(self, type, mapName):
         return self.reqJSON(self.urls[type][mapName])
 

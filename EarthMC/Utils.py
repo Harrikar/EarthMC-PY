@@ -75,9 +75,7 @@ class utils:
         return abs(area/2) / divisor
 
     @staticmethod
-    def manhattan_distance(loc1, loc2):
+    def manhattan(x1, z1, x2, z2):
+        return abs(x2 - x1) + abs(z2 - z1)
 
-        return abs(loc2.x - loc1.x) + abs(loc2.z - loc1.z)
-
-        return abs(loc2.x - loc1.x) + abs(loc2.z - loc1.z)
 

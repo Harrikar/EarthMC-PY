@@ -3,7 +3,7 @@ import time
 from EarthMC import Map
 import math
 from ..Utils import utils
-
+from EarthMC import DataHandler
 from typing import TypedDict
 
 LocationType = TypedDict('LocationType', { 'x': int, 'z': int })
@@ -12,21 +12,30 @@ class Location:
         self.x = x
         self.z = z
 
+
 class RouteOptions:
     def __init__(self, pvp, public):
         self.avoid_pvp = pvp
         self.avoid_public = public
 
+
+
 class Route(Enum):
+
     SAFEST = RouteOptions(True, True)
     FASTEST = RouteOptions(False, False)
     AVOID_PVP = RouteOptions(True, False)
     AVOID_PUBLIC = RouteOptions(False, True)
 
+
+
 class GPS:
     def __init__(self, map: Map):
         self.map = map # The parent Map the GPS was set up on.
 
+    def manhattan_distance(self,loc1, loc2):
+
+        return abs(loc2.x - loc1.x) + abs(loc2.z - loc1.z)
     def fetch_location_town(self, town_name):
         town = self.map.Towns.get(town_name)
 
@@ -48,7 +57,51 @@ class GPS:
 
         return None
 
-    def find_route(self, loc: LocationType, route: Route):
+    async def find_route(self,loc, options,map_name:str):
+        if not loc['x']:
+            x = loc['x']
+            raise f'Invalid {x}'
+        elif not loc['z']:
+            z = loc['z']
+            raise f'Invalid {z}'
+
+        towns = DataHandler.Endpoint.fetch(type='towns',mapName=map_name)
+        nations = DataHandler.Endpoint.fetch(type='nations',mapName=map_name)
+        filtered = []
+
+        for nation in nations:
+            capital = next((t for t in towns if t['name'] == nation['capital']['name']), None)
+            if not capital:
+                continue
+
+            flags = capital['flags']
+            PVP = options['avoidPvp'] and flags['pvp']
+            PUBLIC = options['avoidPublic'] and not flags['public']
+            if PVP or PUBLIC:
+                continue
+
+            filtered.append(nation)
+
+        result = filtered[0] if filtered else None
+        if result:
+            min_dist = None
+            closest_nation = None
+            for nation in filtered:
+                dist = utils.manhattan(nation['capital']['x'], nation['capital']['z'], loc['x'], loc['z'])
+                if not min_dist or dist < min_dist:
+                    min_dist = dist
+                    closest_nation = {
+                        'name': nation['name'],
+                        'capital': nation['capital']
+                    }
+
+            direction = self.calculate_cardinal_direction(closest_nation['capital'], loc)
+            return {
+                'nation': closest_nation,
+                'distance': round(min_dist),
+                'direction': direction
+            }
+
         return None
 
     def find_safest_route(self, loc: LocationType):
@@ -69,7 +122,7 @@ class GPS:
 
         for nation in filtered:
             capital = nation['capital']
-            dist = utils.manhattan_distance(capital, loc)
+            dist = self.manhattan_distance(capital, loc)
 
             if dist < min_distance:
                 min_distance = dist
