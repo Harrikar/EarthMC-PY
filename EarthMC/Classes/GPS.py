@@ -3,7 +3,6 @@ import time
 from EarthMC import Map
 import math
 from ..Utils import utils
-from EarthMC import DataHandler
 from typing import TypedDict
 
 LocationType = TypedDict('LocationType', { 'x': int, 'z': int })
@@ -35,7 +34,7 @@ class GPS:
 
     def manhattan_distance(self,loc1, loc2):
 
-        return abs(loc2.x - loc1.x) + abs(loc2.z - loc1.z)
+        return abs(loc2 - loc1) + abs(loc2 - loc1)
     def fetch_location_town(self, town_name):
         town = self.map.Towns.get(town_name)
 
@@ -105,7 +104,7 @@ class GPS:
 
         return None
 
-    def find_safest_route(self, loc: LocationType):
+    def find_safest_route(self, x:float,z:float):
         nations = self.map.Nations.all()
         towns = self.map.Towns.all()
 
@@ -123,6 +122,7 @@ class GPS:
 
         for nation in filtered:
             capital = nation['capital']
+            loc = {x, z}
             dist = self.manhattan_distance(capital, loc)
 
             if dist < min_distance:
