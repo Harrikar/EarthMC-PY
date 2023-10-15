@@ -114,10 +114,53 @@ class GPS(EventEmitter):
 
         asyncio.create_task(track_interval())
 
-    def find_route(self, loc: LocationType, route: Route):
-        # TODO: Implement route finder
-        return None
+    async def find_route(self, loc: LocationType, options):
+        if not loc['x']:
+            x = loc['x']
+            print(f'Invalid {x}')
 
+        elif not loc['z']:
+            z = loc['z']
+            print(f'Invalid {z}')
+
+        towns = self.map.Towns.all()
+        nations = self.map.Nations.all()
+        filtered = []
+
+        for nation in nations:
+            capital = next((t for t in towns if t['name'] == nation['capital']['name']), None)
+            if not capital:
+                continue
+
+            flags = capital['flags']
+            PVP = options['avoidPvp'] and flags['pvp']
+            PUBLIC = options['avoidPublic'] and not flags['public']
+            if PVP or PUBLIC:
+                continue
+
+            filtered.append(nation)
+
+        result = filtered[0] if filtered else None
+        if result:
+            min_dist = None
+            closest_nation = None
+            for nation in filtered:
+                dist = utils.manhattan(nation['capital']['x'], nation['capital']['z'], loc['x'], loc['z'])
+                if not min_dist or dist < min_dist:
+                    min_dist = dist
+                    closest_nation = {
+                        'name': nation['name'],
+                        'capital': nation['capital']
+                    }
+
+            direction = self.calculate_cardinal_direction(closest_nation['capital'], loc)
+            return {
+                'nation': closest_nation,
+                'distance': round(min_dist),
+                'direction': direction
+            }
+
+        return None
     def find_safest_route(self, loc: LocationType):
         nations = self.map.Nations.all()
         towns = self.map.Towns.all()
