@@ -1,10 +1,10 @@
 from enum import Enum
 import time
 import math
-from ..Utils import utils
+from EarthMC.Utils import utils
 from typing import TypedDict
 
-LocationType = TypedDict('LocationType', { 'x': float, 'z': float})
+LocationType = TypedDict('LocationType', {'x': int, 'z': int})
 class Location:
     def __init__(self, x, z):
         self.x = x
@@ -55,7 +55,7 @@ class GPS:
 
         return None
 
-    async def find_route(self,loc, options,map_name:str):
+    async def find_route(self,loc:LocationType, options,map_name:str):
         if not loc['x']:
             x = loc['x']
             print( f'Invalid {x}')
@@ -103,7 +103,7 @@ class GPS:
 
         return None
 
-    def find_safest_route(self, x:float,z:float):
+    def find_safest_route(self, loc:LocationType):
         nations = self.map.Nations.all()
         towns = self.map.Towns.all()
 
@@ -121,8 +121,8 @@ class GPS:
 
         for nation in filtered:
             capital = nation['capital']
-            loc = {x, z}
-            dist = self.manhattan_distance(capital, loc)
+
+            dist = self.manhattan_distance(capital,loc)
 
             if dist < min_distance:
                 min_distance = dist
