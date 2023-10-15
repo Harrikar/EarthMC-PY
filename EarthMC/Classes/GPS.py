@@ -41,6 +41,12 @@ class GPS(EventEmitter):
         # The parent Map the GPS was set up on.
         self.map = map
 
+        def manhattan_distance(self, loc1, loc2):
+            return abs(loc2 - loc1) + abs(loc2 - loc1)
+
+    def manhattan_distance(self,loc1, loc2):
+
+        return abs(loc2 - loc1) + abs(loc2 - loc1)
     def get_town_location(self, town_name):
         town = self.map.Towns.get(town_name)
 
@@ -113,11 +119,10 @@ class GPS(EventEmitter):
                 await asyncio.sleep(interval / 1000)
 
         asyncio.create_task(track_interval())
-
-    async def find_route(self, loc: LocationType, options):
+    async def find_route(self,loc:LocationType, options):
         if not loc['x']:
             x = loc['x']
-            print(f'Invalid {x}')
+            print( f'Invalid {x}')
 
         elif not loc['z']:
             z = loc['z']
@@ -161,6 +166,7 @@ class GPS(EventEmitter):
             }
 
         return None
+
     def find_safest_route(self, loc: LocationType):
         nations = self.map.Nations.all()
         towns = self.map.Towns.all()
@@ -179,7 +185,7 @@ class GPS(EventEmitter):
 
         for nation in filtered:
             capital = nation['capital']
-            dist = utils.manhattan_distance(capital, loc)
+            dist = self.manhattan_distance(capital, loc)
 
             if dist < min_distance:
                 min_distance = dist
