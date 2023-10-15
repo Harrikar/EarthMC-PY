@@ -1,40 +1,47 @@
 from enum import Enum
-import time
+from EarthMC import Map
 import math
-from EarthMC.Utils import utils
+from ..Utils import utils
+
 from typing import TypedDict
 
-LocationType = TypedDict('LocationType', {'x': int, 'z': int})
+import asyncio
+from pyee import EventEmitter
+
+LocationType = TypedDict('LocationType', { 'x': int, 'z': int })
 class Location:
     def __init__(self, x, z):
         self.x = x
         self.z = z
-
 
 class RouteOptions:
     def __init__(self, pvp, public):
         self.avoid_pvp = pvp
         self.avoid_public = public
 
-
-
 class Route(Enum):
-
     SAFEST = RouteOptions(True, True)
     FASTEST = RouteOptions(False, False)
     AVOID_PVP = RouteOptions(True, False)
     AVOID_PUBLIC = RouteOptions(False, True)
 
+class GPS(EventEmitter):
+    map: Map
+    emitted_underground: bool
+    last_loc: {}
 
+    def __init__(self, map: Map):
+        # Initialize event emitter
+        super().__init__()
 
-class GPS:
-    def __init__(self,map ):
-        self.map = map # The parent Map the GPS was set up on.
+        # Used when `track()` is called.
+        self.emitted_underground = False
+        self.last_loc = None
 
-    def manhattan_distance(self,loc1, loc2):
+        # The parent Map the GPS was set up on.
+        self.map = map
 
-        return abs(loc2 - loc1) + abs(loc2 - loc1)
-    def fetch_location_town(self, town_name):
+    def get_town_location(self, town_name):
         town = self.map.Towns.get(town_name)
 
         if town:
@@ -42,23 +49,75 @@ class GPS:
 
         return None
 
-    def fetch_location_nation(self, nation_name):
+    def get_nation_location(self, nation_name):
         nation = self.map.Nations.get(nation_name)
 
         if nation:
             capital = nation['capital']
 
-
+            # Both unused?
             pvp = nation['pvp']
             public = nation['public']
             location_spawn = Location(capital['x'], capital['z'])
 
         return None
 
-    async def find_route(self,loc:LocationType, options,map_name:str):
+    async def track(self, player_name: str, interval=3000, route: Route = None):
+        if route is None:
+            route = {
+                "avoidPvp": False,
+                "avoidPublic": False
+            }
+
+        async def track_interval():
+            while True:
+                player = await self.map.Players.get(player_name)
+                if not player["world"]:
+                    self.emit("error", {
+                        "err": "INVALID_PLAYER",
+                        "msg": "Player is offline or does not exist!"
+                    })
+
+                    return
+
+                underground = (player["x"] == 0 and player["z"] == 0 and
+                               player["world"] != "some-other-bogus-world")
+
+                if underground:
+                    if not self.emitted_underground:
+                        self.emitted_underground = True
+
+                        if not self.last_loc:
+                            self.emit("underground", "No last location. Waiting for this player to show.")
+                            return
+
+                        try:
+                            route_info = self.find_route(self.last_loc, route)
+                            self.emit("underground", {"lastLocation": self.last_loc, "routeInfo": route_info})
+                        except Exception as e:
+                            self.emit("error", {"err": "INVALID_LAST_LOC", "msg": str(e)})
+                else:
+                    loc = {
+                        "x": player["x"],
+                        "z": player["z"]
+                    }
+                    self.last_loc = loc
+
+                    try:
+                        route_info = self.find_route(loc, route)
+
+                        self.emit("locationUpdate", route_info)
+                    except Exception as e:
+                        self.emit("error", {"err": "INVALID_LOC", "msg": str(e)})
+
+                await asyncio.sleep(interval / 1000)
+
+        asyncio.create_task(track_interval())
+
+    async def find_route(self, loc: LocationType, options):
         if not loc['x']:
             x = loc['x']
-            print( f'Invalid {x}')
+            print(f'Invalid {x}')
 
         elif not loc['z']:
             z = loc['z']
@@ -102,8 +161,7 @@ class GPS:
             }
 
         return None
-
-    def find_safest_route(self, loc:LocationType):
+    def find_safest_route(self, loc: LocationType):
         nations = self.map.Nations.all()
         towns = self.map.Towns.all()
 
@@ -121,8 +179,7 @@ class GPS:
 
         for nation in filtered:
             capital = nation['capital']
-
-            dist = self.manhattan_distance(capital,loc)
+            dist = utils.manhattan_distance(capital, loc)
 
             if dist < min_distance:
                 min_distance = dist
@@ -154,55 +211,3 @@ class GPS:
             return "west"
         else:
             return "south"
-
-class Tracker:
-    def __init__(self, x, z,map):
-        self.x = x
-        self.z = z
-        self.Map = map
-
-
-        self.current_players_aurora = {}
-        self.current_players_nova = {}
-        self.old_players_aurora = {}
-        self.old_players_nova = {}
-
-    def retrieve_and_update_players(self):
-        self.current_players_aurora = self.Map.Players.all
-        self.current_players_nova = self.Map.Players.all
-        self.old_players_aurora = self.current_players_aurora.copy()
-        self.old_players_nova = self.current_players_nova.copy()
-
-    def run(self):
-        while True:
-            self.retrieve_and_update_players()
-            time.sleep(60)
-
-    def track_player(self, player_name, map_name):
-        player = None
-
-        if map_name.lower() == 'aurora':
-            player = self.current_players_aurora.get(player_name)
-
-        elif map_name.lower() == 'nova':
-            player = self.current_players_nova.get(player_name)
-
-        if player:
-            location = Location(player['x'], player['z'])
-
-            if map_name.lower() == 'aurora':
-                if player_name in self.current_players_aurora:
-                    print(f'Current location of {player_name}: {location}')
-
-                elif player_name in self.old_players_aurora:
-                    old_location_aurora = self.old_players_aurora[player_name]
-                    print(f'Last known location of {player_name}: {old_location_aurora}')
-
-            elif map_name.lower() == 'nova':
-                if player_name in self.current_players_nova:
-                    print(f'Current location of {player_name}: {location}')
-                elif player_name in self.old_players_nova:
-                    old_location_nova = self.old_players_nova[player_name]
-                    print(f'Last known location of {player_name}: {old_location_nova}')
-
-        print(f'Player {player_name} not found on {map_name} map')
