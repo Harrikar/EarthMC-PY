@@ -192,16 +192,17 @@ class Tracker:
 
             if map_name.lower() == 'aurora':
                 if player_name in self.current_players_aurora:
-                    return f'Current location of {player_name}: {location}'
+                    print(f'Current location of {player_name}: {location}')
+
                 elif player_name in self.old_players_aurora:
                     old_location_aurora = self.old_players_aurora[player_name]
-                    return f'Last known location of {player_name}: {old_location_aurora}'
+                    print(f'Last known location of {player_name}: {old_location_aurora}')
 
             elif map_name.lower() == 'nova':
                 if player_name in self.current_players_nova:
-                    return f'Current location of {player_name}: {location}'
+                    print(f'Current location of {player_name}: {location}')
                 elif player_name in self.old_players_nova:
                     old_location_nova = self.old_players_nova[player_name]
-                    return f'Last known location of {player_name}: {old_location_nova}'
+                    print(f'Last known location of {player_name}: {old_location_nova}')
 
-        return f'Player {player_name} not found on {map_name} map'
+        print(f'Player {player_name} not found on {map_name} map')
